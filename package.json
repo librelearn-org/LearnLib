@@ -1,6 +1,6 @@
 {
   "name": "@siemsiem/learnlib",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/index.js",
   "files": [
@@ -9,7 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "bun-test": "bun test",
-    "build": "bun build ./src/index.ts --outdir ./dist --format esm",
+    "build": "bun build ./index.ts --outdir ./dist --format esm --target node",
     "prepublishOnly": "bun run build"
   },
   "keywords": [],
