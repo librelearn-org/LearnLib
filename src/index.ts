@@ -1,4 +1,4 @@
-import assert from "node:assert";
+import { assert } from "node:assert" 
 import { LearnConfig, Lijst, LijstItem } from "./types";
 import { shuffle } from "./helpers"
 
@@ -29,7 +29,7 @@ export class learingTools {
       let lijstItem = Object.values(this.lijst)[lijstItemIndex];
       lijstItem.goedFoutLijst = [];
       assert(lijstItem.id, 'Er is een object zonder een id in de reshuffel functie gekomen. knap!')
-      this.wachtrij.push(lijstItem.id)
+      this.wachtrij.push(lijstItem.id!)
     };
   };
 };
