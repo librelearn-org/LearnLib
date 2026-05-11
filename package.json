@@ -9,7 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "bun-test": "bun test",
-    "build": "bun build ./index.ts --outdir ./dist --format esm --target node",
+    "build": "bun build ./index.ts --outdir ./dist --format esm --target node --sourcemap=inline",
     "prepublishOnly": "bun run build"
   },
   "keywords": [],
