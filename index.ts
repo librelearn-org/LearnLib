@@ -82,7 +82,7 @@ export default class learnLib {
     if (this.config.optioneleAntwoordDelen && correctAnswer.includes("(")) {
       // regex D:
       const antwoordZonderOptioneel = correctAnswer.replace(/\([^)]*\)/g, "").trim();
-      const antwoordMetOptioneel = correctAnswer.replace(/[()]/g, "").trim();
+      const antwoordMetOptioneel = correctAnswer.replace(/\(([^)]*)\)/g, "$1").trim();
       if (answer === antwoordZonderOptioneel || answer === antwoordMetOptioneel) {
         isCorrect = true;
       }
@@ -147,7 +147,8 @@ export default class learnLib {
   };
 
   // Internal method to notify state changes
-  private notifyStateChange() {
+  // fuck dit het is nu public voor makkelijker testen
+  public notifyStateChange() {
     if (this.subscriber) {
       console.log("notifying state change...");
       console.log("state:", {

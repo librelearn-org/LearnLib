@@ -1,5 +1,7 @@
 # LearnLib
 
+[![.github/workflows/test.yml](https://github.com/siemvk/LearnLib/actions/workflows/test.yml/badge.svg)](https://github.com/siemvk/LearnLib/actions/workflows/test.yml)
+
 LearnLib is een framework agnostic helper library voor het maken van leer apps. Huidige functies zijn onder andere:
 
 - Alternatieve antwoorden toestaan met `antwoord1 / antwoord2` syntax
