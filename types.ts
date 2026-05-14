@@ -15,12 +15,13 @@ export type LijstItem = {
     listSessionItemId?: any,
     id?: string
   }[],
-  roundCount: number,
+  roundCount?: number, // niet geinit
   id?: string // een voorstel voor de interne id van de lijst
 
   // ts blij houden
   listSession?: any,
   listSessionId?: any,
+  listId?: any,
 }
 export type LearnConfig = {
   staAlternatieveAntwoordenToe?: boolean // `antwoord een / antwoord twee` syntax
