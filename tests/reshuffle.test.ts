@@ -15,3 +15,32 @@ it("should reshuffle an array", () => {
 
     expect(originalOrder).not.toEqual(newOrder);
 })
+
+it("should reset round count and answer history on reshuffle", () => {
+    const learnLib = new LearnLib(testlijst);
+
+    // we geven elk item een round count en antwoord geschiedenis
+    Object.values(learnLib.getState().lijst).forEach((item) => {
+        item.roundCount = 5;
+        item.listSessionItemAnswerHistories = [
+            {
+                round: 0,
+                goed: true,
+                antwoord: "test"
+            },
+            {
+                round: 2,
+                goed: true,
+                antwoord: "test"
+            }
+        ];
+    });
+
+    learnLib.reshuffle();
+
+    // we checken of elk item een round count van 0 heeft en een lege antwoord geschiedenis
+    Object.values(learnLib.getState().lijst).forEach((item) => {
+        expect(item.roundCount).toBe(0);
+        expect(item.listSessionItemAnswerHistories).toEqual([]);
+    });
+})
