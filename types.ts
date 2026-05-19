@@ -26,12 +26,13 @@ export type LijstItem = {
 export type LearnConfig = {
   staAlternatieveAntwoordenToe?: boolean // `antwoord een / antwoord twee` syntax
   multikeuzeWisselAlternatieveAntwoordenAf?: boolean // wisle bij meerkeuze vragen met de vorige syntax de antwoorden af
-  gebruikAlternatieveVragenAfwisselendWanneerBeschikbaar?: boolean,
+  gebruikAlternatieveVragenAfwisselendWanneerBeschikbaar?: boolean, // `vraag1/vraag2` syntax, wissel deze af als deze optie aanstaat. JE MOET HIERVOOR DE CURRENTITEM SYNTAX GEBRUIKEN OM HET OP TE HALEN!! (werkt vanaf 1.1.0)
   gebruikSeed?: string, // anders random
   fuckFransen?: boolean, // handig voor grieks of als je geen zin hebt om het te leren
   // dislectieVrindeleik?: boolean, // maakt `é -> ee` en `è -> e` etc // TODO: dit werkt nog niet!!
   optioneleAntwoordDelen?: boolean, // maakt het dat delen van antwoorden optioneel zijn, dus alles wat in `(...)` staat.
   enkelWoordAlternatieveAntwoorden?: boolean, // `woord/anderwoord` syntax
+  griekseLettersLatijnsKans?: number, // 0 -> 100 kans dat griekse letters worden omgezet naar latijnse equivalenten, dus `α -> a` etc. Handig als je grieks leert maar geen zin hebt om te leren typen.
 }
 export let defaultLearnConfig: LearnConfig = {
   staAlternatieveAntwoordenToe: true,
@@ -41,4 +42,5 @@ export let defaultLearnConfig: LearnConfig = {
   // dislectieVrindeleik: false,
   optioneleAntwoordDelen: true,
   enkelWoordAlternatieveAntwoorden: true,
+  griekseLettersLatijnsKans: 0,
 }

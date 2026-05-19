@@ -1,18 +1,21 @@
 import { defaultLearnConfig, type LearnConfig, type Lijst, type LijstItem } from "./types";
 import { shuffle } from "./helpers"
+import { greekToLatin } from "./greek";
 
 export interface LearnLibState {
   lijst: Record<string, LijstItem>;
   wachtrij: string[];
+  currentItem?: LijstItem | null;
   config: LearnConfig;
 }
 
 export default class learnLib {
   private lijst: Record<string, LijstItem> = {};
   private wachtrij: string[] = [];
-  private config: LearnConfig = {};
+  public config: LearnConfig = {};
   private subscriber: ((state: LearnLibState) => void) | null = null;
 
+  public currentItem: LijstItem | null = null;
 
   constructor(lijst: Lijst, config?: LearnConfig) {
     lijst.forEach((value: LijstItem) => {
@@ -146,9 +149,37 @@ export default class learnLib {
     this.notifyStateChange();
   };
 
+  private updateCurrentItem() {
+    const currentItemId = this.wachtrij[0];
+    if (currentItemId) {
+      this.currentItem = { ...this.lijst[currentItemId] }; // we copy het item zodat we het kunnen aanpassen zonder de originele lijst te muteren
+    } else {
+      this.currentItem = null;
+    }
+    if (this.currentItem) {
+      if (this.config.gebruikAlternatieveVragenAfwisselendWanneerBeschikbaar) {
+        // als er alternatieve vragen zijn, dan wisselen we deze af
+        const mogelijkeVragen = this.currentItem?.vraag.split("/")
+        if (mogelijkeVragen) {
+          console.log("alternatieve vragen beschikbaar, wisselen af", mogelijkeVragen);
+          const randomIndex = Math.floor(Math.random() * mogelijkeVragen.length);
+          this.currentItem!.vraag = mogelijkeVragen[randomIndex];
+        }
+      }
+      if (this.config.griekseLettersLatijnsKans && this.config.griekseLettersLatijnsKans > 0) {
+        // random number
+        const randomNum = Math.random() * 100;
+        if (randomNum < this.config.griekseLettersLatijnsKans) {
+          this.currentItem.vraag = greekToLatin(this.currentItem.vraag);
+        }
+      }
+    }
+  }
+
   // Internal method to notify state changes
   // fuck dit het is nu public voor makkelijker testen
   public notifyStateChange() {
+    this.updateCurrentItem()
     if (this.subscriber) {
       console.log("notifying state change...");
       console.log("state:", {
@@ -169,6 +200,7 @@ export default class learnLib {
     return {
       lijst: this.lijst,
       wachtrij: this.wachtrij,
+      currentItem: this.currentItem,
       config: this.config,
     };
   };
