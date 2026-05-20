@@ -5,7 +5,7 @@ import { greekToLatin } from "./greek";
 export interface LearnLibState {
   lijst: Record<string, LijstItem>;
   wachtrij: string[];
-  currentItem?: LijstItem | null;
+  currentItem: LijstItem | null;
   config: LearnConfig;
 }
 
@@ -191,6 +191,7 @@ export default class learnLib {
         lijst: this.lijst,
         wachtrij: this.wachtrij,
         config: this.config,
+        currentItem: this.currentItem,
       });
     }
   };

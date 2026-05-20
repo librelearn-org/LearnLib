@@ -1,3 +1,9 @@
+# 1.1.1
+
+fixed:
+
+- the fucked up updating of the subscriber 
+
 # 1.1.0
 
 nieuw:
