@@ -6,6 +6,7 @@ export interface LearnLibState {
   lijst: Record<string, LijstItem>;
   wachtrij: string[];
   currentItem: LijstItem | null;
+  last: string; // the listId
   config: LearnConfig;
 }
 
@@ -16,6 +17,7 @@ export default class learnLib {
   private subscriber: ((state: LearnLibState) => void) | null = null;
 
   public currentItem: LijstItem | null = null;
+  public last: string = ""; // de lijstId van het laatst geantwoord item, handig voor de UI om te weten of het antwoord goed of fout was
 
   constructor(lijst: Lijst, config?: LearnConfig) {
     lijst.forEach((value: LijstItem) => {
@@ -141,6 +143,7 @@ export default class learnLib {
       this.wachtrij.push(currentItemId);
     }
     currentItem.roundCount = (currentItem.roundCount || 0) + 1;
+    this.last = currentItem.id!;
     this.notifyStateChange();
   };
 
@@ -192,6 +195,7 @@ export default class learnLib {
         wachtrij: this.wachtrij,
         config: this.config,
         currentItem: this.currentItem,
+        last: this.last
       });
     }
   };
@@ -203,6 +207,7 @@ export default class learnLib {
       wachtrij: this.wachtrij,
       currentItem: this.currentItem,
       config: this.config,
+      last: this.last
     };
   };
 };

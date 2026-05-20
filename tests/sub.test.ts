@@ -9,6 +9,8 @@ it("we kunnen subscriben en callen", () => {
         expect(state).toHaveProperty("wachtrij");
         expect(state).toHaveProperty("config");
         expect(state).toHaveProperty("currentItem");
+        expect(state).toHaveProperty("last");
+
     });
 
     learnLib.setSubscriber(callback);
@@ -25,6 +27,7 @@ it("we horen over een reshuffle", () => {
         expect(state).toHaveProperty("wachtrij");
         expect(state).toHaveProperty("config");
         expect(state).toHaveProperty("currentItem");
+        expect(state).toHaveProperty("last");
     });
 
     learnLib.setSubscriber(callback);
