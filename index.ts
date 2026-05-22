@@ -5,7 +5,7 @@ import { greekToLatin } from "./greek";
 export interface LearnLibState {
   lijst: Record<string, LijstItem>;
   wachtrij: string[];
-  currentItem: LijstItem | null;
+  currentItem: LijstItem;
   last: string; // the listId
   config: LearnConfig;
 }
@@ -16,7 +16,7 @@ export default class learnLib {
   public config: LearnConfig = {};
   private subscriber: ((state: LearnLibState) => void) | null = null;
 
-  public currentItem: LijstItem | null = null;
+  public currentItem: LijstItem;
   public last: string = ""; // de lijstId van het laatst geantwoord item, handig voor de UI om te weten of het antwoord goed of fout was
 
   constructor(lijst: Lijst, config?: LearnConfig) {
@@ -32,6 +32,7 @@ export default class learnLib {
     }
     this.config = config;
     shuffle(this.wachtrij);
+    this.currentItem = this.lijst[this.wachtrij[0]];
   };
 
 
@@ -157,7 +158,13 @@ export default class learnLib {
     if (currentItemId) {
       this.currentItem = { ...this.lijst[currentItemId] }; // we copy het item zodat we het kunnen aanpassen zonder de originele lijst te muteren
     } else {
-      this.currentItem = null;
+      this.currentItem = {
+        id: "",
+        vraag: "",
+        antwoord: "",
+        listSessionItemAnswerHistories: [],
+        roundCount: 0
+      };
     }
     if (this.currentItem) {
       if (this.config.gebruikAlternatieveVragenAfwisselendWanneerBeschikbaar) {
