@@ -1,207 +1,227 @@
 import { describe, it, expect } from "bun:test";
-import Learnlib, { methodes, gradeMakers, wachtrijUpdaters } from "../index";
-import { simpleMethode } from "../methodes/simple";
-import { verySimple } from "../gradeMakers/verySimple";
-import { simpleWachtrij } from "../wachrijUpdater/simple";
-import { KaartStaat, Grade, fase } from "../types";
+import Learnlib, { methods, gradeMakers, queueUpdaters } from "../index";
+import { SimpleMethod } from "../methods/simple";
+import { VerySimpleGradeMaker } from "../gradeMakers/verySimple";
+import { SimpleQueueUpdater } from "../queueUpdaters/simple";
+import { CardState, Grade, Phase, LearnlibState } from "../types";
 
 describe("Learnlib main class", () => {
-    function createDummyKaart(id: string, vraag: string = "Vraag", antwoord: string = "Antwoord", methodeId: string = "simple"): KaartStaat {
-        return {
-            id,
-            vraag,
-            antwoord,
-            fase: fase.Leer,
-            methodeId,
-            lastReviewed: new Date(),
-            nextReview: new Date(),
-            metaData: {}
-        };
-    }
+  function createDummyCard(id: string, question: string = "Question", answer: string = "Answer", methodId: string = "simple"): CardState {
+    return {
+      id,
+      question,
+      answer,
+      phase: Phase.Learning,
+      methodId,
+      lastReviewed: new Date(),
+      nextReview: new Date(),
+      history: [],
+      metadata: {},
+    };
+  }
 
-    it("initializes correctly and upgrades cards missing methodeId", () => {
-        const partialKaart: any = {
-            id: "card-1",
-            vraag: "Wat is de hoofdstad van Frankrijk?",
-            antwoord: "Parijs"
-        };
+  it("initializes correctly and upgrades cards missing methodId", () => {
+    const partialCard: any = {
+      id: "card-1",
+      question: "What is the capital of France?",
+      answer: "Paris",
+    };
 
-        const methode = new simpleMethode();
-        const grader = new verySimple();
-        const updater = new simpleWachtrij();
+    const method = new SimpleMethod();
+    const grader = new VerySimpleGradeMaker();
+    const updater = new SimpleQueueUpdater();
 
-        const lib = new Learnlib([partialKaart], methode, grader, updater);
+    const lib = new Learnlib([partialCard], method, grader, updater);
 
-        expect(lib.wachtrij.length).toBe(1);
-        expect(lib.current.id).toBe("card-1");
-        expect(lib.current.methodeId).toBe("simple");
+    expect(lib.queue.length).toBe(1);
+    expect(lib.current?.id).toBe("card-1");
+    expect(lib.current?.methodId).toBe("simple");
+  });
+
+  it("supports options-based constructor", () => {
+    const card = createDummyCard("c1", "Q", "A");
+    const lib = new Learnlib({
+      cards: [card],
+      method: "simple",
+      grader: "basic",
+      queueUpdater: "simple",
+      checkConfig: { stripAccents: true },
     });
 
-    it("throws an error if card methodeId does not match learning methode", () => {
-        const kaart = createDummyKaart("1", "Vraag", "Antwoord", "wrong-methode");
-        const methode = new simpleMethode();
-        const grader = new verySimple();
-        const updater = new simpleWachtrij();
+    expect(lib.queue.length).toBe(1);
+    expect(lib.current?.id).toBe("c1");
+    expect(lib.checkConfig.stripAccents).toBe(true);
+  });
 
-        expect(() => new Learnlib([kaart], methode, grader, updater)).toThrow("ERROR: Verkeerde methode");
+  it("throws an error if card methodId does not match learning method", () => {
+    const card = createDummyCard("1", "Question", "Answer", "wrong-method");
+    const method = new SimpleMethod();
+    const grader = new VerySimpleGradeMaker();
+    const updater = new SimpleQueueUpdater();
+
+    expect(() => new Learnlib([card], method, grader, updater)).toThrow("does not match active method");
+  });
+
+  it("processes correct answers via answer()", () => {
+    const k1 = createDummyCard("1", "What is 1+1?", "2");
+    const k2 = createDummyCard("2", "What is 2+2?", "4");
+
+    const method = new SimpleMethod();
+    const grader = new VerySimpleGradeMaker();
+    const updater = new SimpleQueueUpdater();
+
+    const lib = new Learnlib([k1, k2], method, grader, updater);
+    const initialCurrentId = lib.current?.id;
+
+    lib.answer(lib.current?.answer || "error");
+
+    expect(lib.queue.length).toBe(1);
+    expect(lib.current?.id).not.toBe(initialCurrentId);
+  });
+
+  it("processes wrong answers via answer()", () => {
+    const k1 = createDummyCard("1", "What is 1+1?", "2");
+
+    const method = new SimpleMethod();
+    const grader = new VerySimpleGradeMaker();
+    const updater = new SimpleQueueUpdater();
+
+    const lib = new Learnlib([k1], method, grader, updater);
+
+    lib.answer("wrong answer");
+
+    expect(lib.queue.length).toBe(1);
+    expect(lib.current?.id).toBe("1");
+  });
+
+  it("supports grade overwrite in answer()", () => {
+    const k1 = createDummyCard("1", "What is 1+1?", "2");
+    const method = new SimpleMethod();
+    const grader = new VerySimpleGradeMaker();
+    const updater = new SimpleQueueUpdater();
+
+    const lib = new Learnlib([k1], method, grader, updater);
+
+    lib.answer("2", Grade.Incorrect);
+    expect(lib.queue.length).toBe(1);
+  });
+
+  it("reshuffle() reorganizes the queue and sets current", () => {
+    const cards = [
+      createDummyCard("1"),
+      createDummyCard("2"),
+      createDummyCard("3"),
+    ];
+
+    const lib = new Learnlib(cards, new SimpleMethod(), new VerySimpleGradeMaker(), new SimpleQueueUpdater());
+
+    lib.reshuffle();
+    expect(lib.queue.length).toBe(3);
+    expect(lib.current).toBe(lib.queue[0]);
+  });
+
+  it("exports default arrays of methods, gradeMakers and queueUpdaters", () => {
+    expect(Array.isArray(methods)).toBe(true);
+    expect(methods.length).toBeGreaterThan(0);
+
+    expect(Array.isArray(gradeMakers)).toBe(true);
+    expect(gradeMakers.length).toBeGreaterThan(0);
+
+    expect(Array.isArray(queueUpdaters)).toBe(true);
+    expect(queueUpdaters.length).toBeGreaterThan(0);
+  });
+
+  it("respects CheckConfig passed to constructor", () => {
+    const k1 = createDummyCard("1", "Éclair", "Éclair");
+    const method = new SimpleMethod();
+    const grader = new VerySimpleGradeMaker();
+    const updater = new SimpleQueueUpdater();
+
+    const lib = new Learnlib([k1], method, grader, updater, { stripAccents: true });
+
+    lib.answer("eclair");
+    expect(lib.queue.length).toBe(0);
+  });
+
+  it("supports checkConfigOverride in answer()", () => {
+    const k1 = createDummyCard("1", "Answer", "a / b");
+    const method = new SimpleMethod();
+    const grader = new VerySimpleGradeMaker();
+    const updater = new SimpleQueueUpdater();
+
+    const lib = new Learnlib([k1], method, grader, updater);
+
+    lib.answer("b", undefined, { alternativeAnswers: { allow: true, mode: "both" } });
+    expect(lib.queue.length).toBe(0);
+  });
+
+  it("notifies subscribers when answer or reshuffle is called", () => {
+    const k1 = createDummyCard("1", "Question", "Answer");
+    const lib = new Learnlib([k1], new SimpleMethod(), new VerySimpleGradeMaker(), new SimpleQueueUpdater());
+
+    const states: any[] = [];
+    const initialState = lib.getSnapshot();
+    expect(initialState.queueState.current?.id).toBe("1");
+    expect(initialState.queueState.isDone).toBe(false);
+
+    const unsubscribe = lib.subscribe((state) => {
+      states.push(state);
     });
 
-    it("processes correct answers via antwoord()", () => {
-        const k1 = createDummyKaart("1", "Wat is 1+1?", "2");
-        const k2 = createDummyKaart("2", "Wat is 2+2?", "4");
+    lib.answer("Answer");
+    expect(states.length).toBe(1);
+    expect(states[0].queueState.isDone).toBe(true);
 
-        const methode = new simpleMethode();
-        const grader = new verySimple();
-        const updater = new simpleWachtrij();
+    unsubscribe();
+    lib.reshuffle();
+    expect(states.length).toBe(1);
+  });
 
-        const lib = new Learnlib([k1, k2], methode, grader, updater);
-        const initialCurrentId = lib.current.id;
+  it("tracks answer history in snapshot and class instance", () => {
+    const k1 = createDummyCard("1", "Question 1", "Answer 1");
+    const lib = new Learnlib([k1], new SimpleMethod(), new VerySimpleGradeMaker(), new SimpleQueueUpdater());
 
-        lib.antwoord(lib.current.antwoord); // guaranteed correct answer for whichever card is current
+    expect(lib.history.length).toBe(0);
+    lib.answer("Answer 1");
 
-        // After answering correctly, the answered card should be removed from queue by simpleWachtrij
-        expect(lib.wachtrij.length).toBe(1);
-        expect(lib.current.id).not.toBe(initialCurrentId);
-    });
+    expect(lib.history.length).toBe(1);
+    expect(lib.history[0].cardId).toBe("1");
+    expect(lib.history[0].answer).toBe("Answer 1");
+    expect(lib.history[0].grade).toBe(Grade.Good);
+    expect(lib.cards[0].history.length).toBe(1);
+  });
 
-    it("processes wrong answers via antwoord()", () => {
-        const k1 = createDummyKaart("1", "Wat is 1+1?", "2");
+  it("can be initialized from an existing LearnlibState", () => {
+    const k1 = createDummyCard("1", "Question 1", "Answer 1");
+    const k2 = createDummyCard("2", "Question 2", "Answer 2");
+    const existingState: LearnlibState = {
+      cards: [k1, k2],
+      queue: [k1, k2],
+      queueState: {
+        current: k1,
+        isDone: false,
+        initialCount: 2,
+        progress: 0,
+      },
+    };
 
-        const methode = new simpleMethode();
-        const grader = new verySimple();
-        const updater = new simpleWachtrij();
+    const lib = new Learnlib(existingState, new SimpleMethod(), new VerySimpleGradeMaker(), new SimpleQueueUpdater());
+    expect(lib.current?.id).toBe("1");
+    expect(lib.queue.length).toBe(2);
+    expect(lib.cards.length).toBe(2);
+  });
 
-        const lib = new Learnlib([k1], methode, grader, updater);
+  it("can be reset", () => {
+    const cards = [
+      createDummyCard("1"),
+      createDummyCard("2"),
+      createDummyCard("3"),
+    ];
 
-        lib.antwoord("wrong answer");
-
-        // SimpleWachtrij re-inserts wrong card back into queue
-        expect(lib.wachtrij.length).toBe(1);
-        expect(lib.current.id).toBe("1");
-    });
-
-    it("supports grade overwrite in antwoord()", () => {
-        const k1 = createDummyKaart("1", "Wat is 1+1?", "2");
-        const methode = new simpleMethode();
-        const grader = new verySimple();
-        const updater = new simpleWachtrij();
-
-        const lib = new Learnlib([k1], methode, grader, updater);
-
-        // Force grade to Fout even if answer is right
-        lib.antwoord("2", Grade.Fout);
-        expect(lib.wachtrij.length).toBe(1);
-    });
-
-    it("reshuffle() reorganizes the queue and sets current", () => {
-        const kaarten = [
-            createDummyKaart("1"),
-            createDummyKaart("2"),
-            createDummyKaart("3")
-        ];
-
-        const lib = new Learnlib(kaarten, new simpleMethode(), new verySimple(), new simpleWachtrij());
-
-        lib.reshuffle();
-        expect(lib.wachtrij.length).toBe(3);
-        expect(lib.current).toBe(lib.wachtrij[0]);
-    });
-
-    it("exports default arrays of methodes, gradeMakers and wachtrijUpdaters", () => {
-        expect(Array.isArray(methodes)).toBe(true);
-        expect(methodes.length).toBeGreaterThan(0);
-
-        expect(Array.isArray(gradeMakers)).toBe(true);
-        expect(gradeMakers.length).toBeGreaterThan(0);
-
-        expect(Array.isArray(wachtrijUpdaters)).toBe(true);
-        expect(wachtrijUpdaters.length).toBeGreaterThan(0);
-    });
-
-    it("respects CheckConfig passed to constructor", () => {
-        const k1 = createDummyKaart("1", "Éclair", "Éclair");
-        const methode = new simpleMethode();
-        const grader = new verySimple();
-        const updater = new simpleWachtrij();
-
-        const lib = new Learnlib([k1], methode, grader, updater, { fuckFransen: true });
-
-        lib.antwoord("eclair");
-        // With fuckFransen=true, "eclair" is accepted as correct, so simpleWachtrij removes the card
-        expect(lib.wachtrij.length).toBe(0);
-    });
-
-    it("supports checkConfigOverride in antwoord()", () => {
-        const k1 = createDummyKaart("1", "Antwoord", "a / b");
-        const methode = new simpleMethode();
-        const grader = new verySimple();
-        const updater = new simpleWachtrij();
-
-        const lib = new Learnlib([k1], methode, grader, updater);
-
-        // Override config on answer call
-        lib.antwoord("b", undefined, { staAlternatieveAntwoordenToe: true });
-        expect(lib.wachtrij.length).toBe(0);
-    });
-
-    it("notifies subscribers when antwoord or reshuffle is called", () => {
-        const k1 = createDummyKaart("1", "Vraag", "Antwoord");
-        const lib = new Learnlib([k1], new simpleMethode(), new verySimple(), new simpleWachtrij());
-
-        const states: any[] = [];
-        const initialState = lib.getSnapshot();
-        expect(initialState.current?.id).toBe("1");
-        expect(initialState.isKlaar).toBe(false);
-
-        const unsubscribe = lib.subscribe((state) => {
-            states.push(state);
-        });
-
-        lib.antwoord("Antwoord");
-        expect(states.length).toBe(1);
-        expect(states[0].isKlaar).toBe(true);
-
-        unsubscribe();
-        lib.reshuffle();
-        expect(states.length).toBe(1);
-    });
-
-    it("tracks answer history in snapshot and class instance", () => {
-        const k1 = createDummyKaart("1", "Vraag 1", "Antwoord 1");
-        const lib = new Learnlib([k1], new simpleMethode(), new verySimple(), new simpleWachtrij());
-
-        expect(lib.history.length).toBe(0);
-        lib.antwoord("Antwoord 1");
-
-        expect(lib.history.length).toBe(1);
-        expect(lib.history[0].kaartId).toBe("1");
-        expect(lib.history[0].antwoord).toBe("Antwoord 1");
-        expect(lib.history[0].goed).toBe(Grade.GoedPrima);
-        expect(lib.getSnapshot().history.length).toBe(1);
-    });
-
-    it("can be initialized from an existing LearnlibState", () => {
-        const k1 = createDummyKaart("1", "Vraag 1", "Antwoord 1");
-        const k2 = createDummyKaart("2", "Vraag 2", "Antwoord 2");
-        const existingState = {
-            current: k1,
-            wachtrij: [k1, k2],
-            isKlaar: false,
-            initialCount: 2,
-            progress: 0,
-            history: [{
-                kaartId: "0",
-                date: new Date(),
-                antwoord: "previous",
-                goed: Grade.GoedPrima
-            }]
-        };
-
-        const lib = new Learnlib(existingState, new simpleMethode(), new verySimple(), new simpleWachtrij());
-        expect(lib.current?.id).toBe("1");
-        expect(lib.wachtrij.length).toBe(2);
-        expect(lib.history.length).toBe(1);
-        expect(lib.history[0].kaartId).toBe("0");
-    });
+    const lib = new Learnlib(cards, new SimpleMethod(), new VerySimpleGradeMaker(), new SimpleQueueUpdater());
+    lib.answer("1", Grade.Good);
+    expect(lib.queue.length).toBe(2);
+    lib.reset();
+    expect(lib.queue.length).toBe(3);
+  });
 });
-

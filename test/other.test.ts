@@ -1,114 +1,117 @@
-import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import Learnlib from "../index";
-import { verySimple } from "../gradeMakers/verySimple";
-import { simpleMethode } from "../methodes/simple";
-import { simpleWachtrij } from "../wachrijUpdater/simple";
-import { Grade } from "../types";
+import { VerySimpleGradeMaker } from "../gradeMakers/verySimple";
+import { SimpleMethod } from "../methods/simple";
+import { SimpleQueueUpdater } from "../queueUpdaters/simple";
+import { Grade, Phase, CardState, LearnlibState } from "../types";
 
-describe("gradeMakers, methodes, wachtrij and Learnlib", () => {
-    it("verySimple gradeMaker respects overwrite and default behavior", () => {
-        const gm = new verySimple();
-        const now = new Date();
-        expect(gm.grade(true, now, now)).toBe(Grade.GoedPrima);
-        expect(gm.grade(false, now, now)).toBe(Grade.Fout);
-        expect(gm.grade(false, now, now, Grade.GoedMakkelijk)).toBe(Grade.GoedMakkelijk);
+describe("GradeMakers, Methods, Queue and Learnlib", () => {
+  it("VerySimpleGradeMaker respects overwrite and default behavior", () => {
+    const gm = new VerySimpleGradeMaker();
+    const now = new Date();
+    expect(gm.grade(true, now, now)).toBe(Grade.Good);
+    expect(gm.grade(false, now, now)).toBe(Grade.Incorrect);
+    expect(gm.grade(false, now, now, Grade.Easy)).toBe(Grade.Easy);
+  });
+
+  it("SimpleMethod reviewCard toggles metadata and sets nextReview", () => {
+    const m = new SimpleMethod();
+    const card: CardState = {
+      id: "k1",
+      question: "v",
+      answer: "a",
+      phase: Phase.Learning,
+      methodId: "simple",
+      lastReviewed: new Date(0),
+      nextReview: new Date(0),
+      history: [],
+      metadata: {},
+    };
+    const now = new Date();
+    const updated = m.reviewCard({ ...card }, Grade.Good, now);
+    expect(updated.nextReview.getTime()).toBe(now.getTime());
+    expect(updated.metadata["learned"]).toBe(true);
+
+    const updatedFail = m.reviewCard({ ...card }, Grade.Incorrect, now);
+    expect(updatedFail.nextReview.getTime()).toBe(now.getTime());
+  });
+
+  it("SimpleMethod filterQueueItem returns according to metadata.learned", () => {
+    const m = new SimpleMethod();
+    const item: any = { metadata: { learned: true } };
+    expect(m.filterQueueItem(item)).toBe(true);
+    item.metadata.learned = false;
+    expect(m.filterQueueItem(item)).toBe(false);
+  });
+
+  it("SimpleQueueUpdater updateQueue removes or inserts based on grade", () => {
+    const updater = new SimpleQueueUpdater();
+    const card: any = { id: "k1" };
+    const dummyState = (queue: any[]): LearnlibState => ({
+      cards: queue,
+      queue,
+      queueState: {
+        current: queue[0] ?? null,
+        isDone: queue.length === 0,
+        initialCount: queue.length,
+        progress: 0,
+      },
     });
 
-    it("simpleMethode reviewKaart toggles metaData and sets nextReview", () => {
-        const m = new simpleMethode();
-        const kaart: any = {
-            id: "k1",
-            vraag: "v",
-            antwoord: "a",
-            fase: 0,
-            methodeId: "simple",
-            lastReviewed: new Date(0),
-            nextReview: new Date(0),
-            metaData: {}
-        };
-        const now = new Date();
-        const updated = m.reviewKaart(kaart, Grade.GoedPrima, now);
-        expect(updated.nextReview.getTime()).toBe(now.getTime());
-        expect(updated.metaData["geleerd"]).toBe(true);
+    // non-error grade should remove card
+    let state = dummyState([{ id: "k1" }, { id: "k2" }]);
+    let res = updater.updateQueue(state, card, Grade.Good);
+    expect(res.queue.find((k) => k.id === "k1")).toBe(undefined);
 
-        const updatedFail = m.reviewKaart(kaart, Grade.Fout, now);
-        expect(updatedFail.nextReview.getTime()).toBe(now.getTime());
-    });
+    // error grade should insert card at deterministic position
+    const realMathRandom = Math.random;
+    Math.random = () => 0.5; // deterministic
+    state = dummyState([{ id: "k2" }]);
+    res = updater.updateQueue(state, card, Grade.Incorrect);
+    expect(res.queue.some((k) => k.id === "k1")).toBe(true);
+    Math.random = realMathRandom;
+  });
 
-    it("simpleMethode filterWachtrijItem returns according to metaData.geleerd", () => {
-        const m = new simpleMethode();
-        const item: any = { metaData: { geleerd: true } };
-        expect(m.filterWachtrijItem(item)).toBe(true);
-        item.metaData.geleerd = false;
-        expect(m.filterWachtrijItem(item)).toBe(false);
-    });
+  it("Learnlib constructor validates methodId and answer updates state and calls updater", () => {
+    const card: CardState = {
+      id: "1",
+      question: "q",
+      answer: "a",
+      phase: Phase.Learning,
+      methodId: "simple",
+      lastReviewed: new Date(0),
+      nextReview: new Date(0),
+      history: [],
+      metadata: {},
+    };
 
-    it("simpleWachtrij updateWachtrij removes or inserts based on grade", () => {
-        const updater = new simpleWachtrij();
-        const kaart: any = { id: "k1" };
-        const dummyState = (wachtrij: any[]) => ({
-            current: wachtrij[0] ?? null,
-            wachtrij,
-            isKlaar: wachtrij.length === 0,
-            initialCount: wachtrij.length,
-            progress: 0,
-            history: []
-        });
+    const method = {
+      id: "simple",
+      reviewCard: (k: any, g: Grade, now: Date) => {
+        k.metadata.learned = true;
+        k.lastReviewed = now;
+        return k;
+      },
+      filterQueueItem: () => true,
+    } as any;
 
-        // non-error grade should remove kaart
-        let state = dummyState([{ id: "k1" }, { id: "k2" }]);
-        let res = updater.updateWachtrij(state, kaart, Grade.GoedPrima);
-        expect(res.wachtrij.find(k => k.id === "k1")).toBe(undefined);
+    let updaterCalled = false;
+    const queueUpdater = {
+      id: "simple",
+      updateQueue: (state: any, k: any, g: Grade) => {
+        updaterCalled = true;
+        return state;
+      },
+    } as any;
 
-        // error grade should insert kaart at deterministic position
-        const realMathRandom = Math.random;
-        Math.random = () => 0.5; // deterministic
-        state = dummyState([{ id: "k2" }]);
-        res = updater.updateWachtrij(state, kaart, Grade.Fout);
-        expect(res.wachtrij.some(k => k.id === "k1")).toBe(true);
-        Math.random = realMathRandom;
-    });
+    const grader = { id: "basic", grade: () => Grade.Good } as any;
 
-    it("Learnlib constructor validates methodeId and antwoord updates state and calls updater", () => {
-        const kaart: any = {
-            id: "1",
-            vraag: "q",
-            antwoord: "a",
-            fase: 0,
-            methodeId: "simple",
-            lastReviewed: new Date(0),
-            nextReview: new Date(0),
-            metaData: {}
-        };
+    const lib = new Learnlib([card], method, grader, queueUpdater);
+    lib.answer("a");
+    expect(updaterCalled).toBe(true);
 
-        const methode = {
-            id: "simple",
-            reviewKaart: (k: any, g: Grade, now: Date) => {
-                k.metaData.geleerd = true;
-                k.lastReviewed = now;
-                return k;
-            }
-        } as any;
-
-        let updaterCalled = false;
-        const wachtrijUpdater = {
-            id: "simple",
-            updateWachtrij: (state: any, k: any, g: Grade) => {
-                updaterCalled = true;
-                return state;
-            }
-        } as any;
-
-        const grader = { id: "basic", grade: (_goed: boolean, _s: Date, _n: Date) => Grade.GoedPrima } as any;
-
-        const lib = new Learnlib([kaart], methode, grader, wachtrijUpdater);
-        // calling antwoord should update current and call updater
-        lib.antwoord("a");
-        expect(updaterCalled).toBe(true);
-
-
-        // constructor throws when methode mismatch
-        const badKaart = { ...kaart, methodeId: "other" };
-        expect(() => new Learnlib([badKaart], methode, grader, wachtrijUpdater)).toThrow();
-    });
+    // constructor throws when method mismatch
+    const badCard = { ...card, methodId: "other" };
+    expect(() => new Learnlib([badCard], method, grader, queueUpdater)).toThrow();
+  });
 });

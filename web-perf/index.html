@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>LearnLib Checker Browser Benchmark</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>LearnLib Checker Browser Benchmark</h1>
+    <p>Browser benchmark test for Old vs Base (Modular) vs Compiled WordChecker</p>
+
+    <hr>
+
+    <h2>Run Full Benchmarks</h2>
+    <button id="runBtn" onclick="runBenchmarks()">Run All Benchmarks</button>
+    <p id="statusText"></p>
+    <div id="results"></div>
+
+    <hr>
+
+    <h2>Interactive Test & Mini Benchmark</h2>
+    <p>
+        <label>Correct Answer: </label>
+        <input type="text" id="targetInput" value="(un/le) auto/wagen">
+    </p>
+    <p>
+        <label>User Answer: </label>
+        <input type="text" id="userInput" value="le auto">
+    </p>
+    <button onclick="runInteractive()">Test Answer & Benchmark</button>
+
+    <div id="interactiveResults"></div>
+
+    <script src="./bundle.js"></script>
+    <script>
+        async function runBenchmarks() {
+            const btn = document.getElementById("runBtn");
+            const status = document.getElementById("statusText");
+            const results = document.getElementById("results");
+
+            btn.disabled = true;
+            results.innerHTML = "";
+            status.textContent = "Starting benchmarks...";
+
+            try {
+                const suites = await window.LearnlibPerf.runAllBenchmarks((current, total, name) => {
+                    status.textContent = `Running ${current}/${total}: ${name}...`;
+                });
+
+                status.textContent = "All benchmarks completed!";
+
+                suites.forEach((suite) => {
+                    const section = document.createElement("div");
+
+                    let rows = "";
+                    suite.results.forEach((r) => {
+                        rows += `
+                            <tr>
+                                <td>${r.name}</td>
+                                <td>${r.iterations.toLocaleString()}</td>
+                                <td>${r.totalMs} ms</td>
+                                <td>${r.opsPerSec.toLocaleString()} ops/sec</td>
+                                <td>${r.avgTimeUs} µs</td>
+                            </tr>
+                        `;
+                    });
+
+                    section.innerHTML = `
+                        <h3>${suite.title}</h3>
+                        <p>${suite.description}</p>
+                        <table border="1" cellpadding="5" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Checker</th>
+                                    <th>Iterations</th>
+                                    <th>Total Time</th>
+                                    <th>Throughput</th>
+                                    <th>Avg Latency</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                        <br>
+                    `;
+                    results.appendChild(section);
+                });
+            } catch (e) {
+                status.textContent = "Error: " + e.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function runInteractive() {
+            const target = document.getElementById("targetInput").value;
+            const user = document.getElementById("userInput").value;
+            const out = document.getElementById("interactiveResults");
+
+            if (!window.LearnlibPerf) {
+                out.textContent = "Error: bundle.js not loaded";
+                return;
+            }
+
+            const res = window.LearnlibPerf.testCustomAnswer(target, user, 30000);
+
+            let rows = "";
+            res.benchmarks.forEach((b, idx) => {
+                const matchVal = idx === 0 ? res.isMatch.old : idx === 1 ? res.isMatch.base : res.isMatch.compiled;
+                rows += `
+                    <tr>
+                        <td>${b.name}</td>
+                        <td>${matchVal ? "TRUE (Match)" : "FALSE (No match)"}</td>
+                        <td>${b.iterations.toLocaleString()}</td>
+                        <td>${b.totalMs} ms</td>
+                        <td>${b.opsPerSec.toLocaleString()} ops/sec</td>
+                        <td>${b.avgTimeUs} µs</td>
+                    </tr>
+                `;
+            });
+
+            out.innerHTML = `
+                <h3>Test Results for "${target}" vs "${user}"</h3>
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Checker</th>
+                            <th>Result</th>
+                            <th>Iterations</th>
+                            <th>Total Time</th>
+                            <th>Throughput</th>
+                            <th>Avg Latency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,64 +1,93 @@
+import type { ModuleSchema, InferConfig } from "./configSystem";
+import type { CheckConfig } from "./checker/shared";
+
 export enum Grade {
-    Fout = 0,
-    GoedMoeilijk = 1,
-    GoedPrima = 2,
-    GoedMakkelijk = 3
+  Incorrect = 0,
+  Hard = 1,
+  Good = 2,
+  Easy = 3,
 }
 
-export interface KaartStaat {
-    id: string,
-    vraag: string,
-    antwoord: string
-    fase: fase,
-    methodeId: string
-    lastReviewed: Date,
-    nextReview: Date,
-    metaData: Record<string, any>,
+export enum Phase {
+  Learning = 0,
+  Review = 1,
 }
 
-export type kaartSnapshot = {
-    kaartId: string,
-    date: Date,
-    antwoord: string,
-    goed: Grade
+export type multiLangString = {
+  EN: string;
+  NL?: string;
+} | {
+  NL: string;
+  EN?: string;
+};
+
+export interface CardSnapshot {
+  cardId: string;
+  date: Date;
+  answer: string;
+  grade: Grade;
 }
 
-export enum fase {
-    Leer = 0,
-    Review = 1,
+export interface CardState {
+  id: string;
+  question: string;
+  answer: string;
+  phase: Phase;
+  methodId: string;
+  lastReviewed: Date;
+  nextReview: Date;
+  history: CardSnapshot[];
+  metadata: Record<string, any>;
 }
 
-export type kaartWachtrij = KaartStaat[];
+export type CardQueue = CardState[];
 
-export interface leerMethode {
-    naam: string,
-    description: string,
-    aboutLink?: string,
-    id: string,
-    reviewKaart(kaart: KaartStaat, g: Grade, now: Date, state: LearnlibState): KaartStaat,
-    filterWachtrijItem(item: KaartStaat): boolean
-}
-export interface wachtrijUpdater {
-    naam: string,
-    description: string,
-    aboutLink?: string,
-    id: string,
-    updateWachtrij(state: LearnlibState, kaart: KaartStaat, g: Grade): LearnlibState
+export type ModuleType = "method" | "queueUpdater" | "gradeMaker" | "checker" | "preprocessor";
+
+export interface BaseModule<TSchema extends ModuleSchema = any> {
+  id: string;
+  type?: ModuleType;
+  name: string | multiLangString;
+  description: string | multiLangString;
+  aboutLink?: string;
+  schema?: TSchema;
+  config?: InferConfig<TSchema>;
 }
 
-export interface gradeMaker {
-    naam: string,
-    description: string,
-    aboutLink?: string,
-    id: string,
-    grade(goed: boolean, start: Date, now: Date, overwrite?: Grade): Grade
+export interface LearningMethod<TSchema extends ModuleSchema = any> extends BaseModule<TSchema> {
+  type?: "method";
+  reviewCard(card: CardState, grade: Grade, now?: Date, state?: LearnlibState): CardState;
+  filterQueueItem(item: CardState): boolean;
+}
+
+export interface QueueUpdater<TSchema extends ModuleSchema = any> extends BaseModule<TSchema> {
+  type?: "queueUpdater";
+  updateQueue(state: LearnlibState, card: CardState, grade: Grade): LearnlibState;
+}
+
+export interface GradeMaker<TSchema extends ModuleSchema = any> extends BaseModule<TSchema> {
+  type?: "gradeMaker";
+  grade(correct: boolean, start: Date, now: Date, overwrite?: Grade): Grade;
 }
 
 export interface LearnlibState {
-    current: KaartStaat | null;
-    wachtrij: KaartStaat[];
-    isKlaar: boolean;
+  cards: CardState[];
+  queue: CardState[];
+  queueState: {
+    current: CardState | null;
+    isDone: boolean;
     initialCount: number;
     progress: number;
-    history: kaartSnapshot[];
+  };
 }
+
+export interface LearnlibOptions {
+  cards: CardState[] | LearnlibState;
+  method?: LearningMethod | string;
+  grader?: GradeMaker | string;
+  queueUpdater?: QueueUpdater | string;
+  checkConfig?: CheckConfig;
+  configs?: Record<string, any>;
+}
+
+export type { ModuleSchema, InferConfig, SchemaField } from "./configSystem";

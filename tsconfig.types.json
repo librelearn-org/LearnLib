@@ -11,6 +11,14 @@
         "skipLibCheck": true
     },
     "include": [
-        "**/**.ts"
+        "index.ts",
+        "types.ts",
+        "configSystem.ts",
+        "moduleSystem.ts",
+        "upgradeTools.ts",
+        "checker/**/*.ts",
+        "methods/**/*.ts",
+        "gradeMakers/**/*.ts",
+        "queueUpdaters/**/*.ts"
     ]
 }

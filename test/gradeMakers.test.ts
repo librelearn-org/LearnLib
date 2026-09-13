@@ -1,32 +1,35 @@
 import { describe, it, expect } from "bun:test";
-import { verySimple } from "../gradeMakers/verySimple";
+import { VerySimpleGradeMaker, verySimple } from "../gradeMakers/verySimple";
 import { Grade } from "../types";
 
-describe("verySimple gradeMaker", () => {
-    const gm = new verySimple();
+describe("VerySimpleGradeMaker", () => {
+  const gm = new VerySimpleGradeMaker();
 
-    it("has metadata properties set", () => {
-        expect(gm.naam).toBe("Erg simple");
-        expect(gm.id.toString()).toBe("basic");
-        expect(typeof gm.description).toBe("string");
+  it("has metadata properties set with translations", () => {
+    expect(gm.name).toEqual({
+      EN: "Very Simple Grader",
+      NL: "Zeer Eenvoudige Beoordelaar",
     });
+    expect(gm.id).toBe("basic");
+    expect(typeof gm.description).toBe("object");
+  });
 
-    it("returns GoedPrima when answer is correct", () => {
-        const start = new Date();
-        const now = new Date();
-        expect(gm.grade(true, start, now)).toBe(Grade.GoedPrima);
-    });
+  it("returns Grade.Good when answer is correct", () => {
+    const start = new Date();
+    const now = new Date();
+    expect(gm.grade(true, start, now)).toBe(Grade.Good);
+  });
 
-    it("returns Fout when answer is incorrect", () => {
-        const start = new Date();
-        const now = new Date();
-        expect(gm.grade(false, start, now)).toBe(Grade.Fout);
-    });
+  it("returns Grade.Incorrect when answer is incorrect", () => {
+    const start = new Date();
+    const now = new Date();
+    expect(gm.grade(false, start, now)).toBe(Grade.Incorrect);
+  });
 
-    it("respects grade overwrite when provided", () => {
-        const start = new Date();
-        const now = new Date();
-        expect(gm.grade(false, start, now, Grade.GoedMakkelijk)).toBe(Grade.GoedMakkelijk);
-        expect(gm.grade(true, start, now, Grade.GoedMoeilijk)).toBe(Grade.GoedMoeilijk);
-    });
+  it("respects grade overwrite when provided", () => {
+    const start = new Date();
+    const now = new Date();
+    expect(gm.grade(false, start, now, Grade.Easy)).toBe(Grade.Easy);
+    expect(gm.grade(true, start, now, Grade.Hard)).toBe(Grade.Hard);
+  });
 });
