@@ -1,5 +1,3 @@
 # LearnLib
 
-[![.github/workflows/test.yml](https://github.com/siemvk/LearnLib/actions/workflows/test.yml/badge.svg)](https://github.com/siemvk/LearnLib/actions/workflows/test.yml)
-
-Use Librelearn for a example on how to integrate LearnLib with your project.
+Please see https://librelearn-group.gitbook.io/librelearn-group-docs for more information about the project and its usage.
