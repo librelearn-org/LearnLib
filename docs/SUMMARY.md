@@ -19,6 +19,7 @@
 
 * [Module System & Registry](configuration/module-system.md)
 * [Schema & Configuration](configuration/schema-and-config.md)
+* [Making a Module Settings GUI](configuration/module-settings-gui.md)
 
 ## Extending LearnLib
 

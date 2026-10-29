@@ -72,6 +72,12 @@ Looking for a real-world integration example? Check out **Librelearn** to see ho
       <td><a href="configuration/module-system.md">module-system</a></td>
     </tr>
     <tr>
+      <td><i class="fa-window-maximize"></i></td>
+      <td><strong>Making a Module Settings GUI</strong></td>
+      <td>Auto-generate localized settings forms from module schemas using getGuiConfigList().</td>
+      <td><a href="configuration/module-settings-gui.md">module-settings-gui</a></td>
+    </tr>
+    <tr>
       <td><i class="fa-puzzle-piece"></i></td>
       <td><strong>Creating a Module</strong></td>
       <td>Extend LearnLib with custom scheduling algorithms, answer syntax rules, and preprocessors.</td>
