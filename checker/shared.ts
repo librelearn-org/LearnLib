@@ -5,7 +5,9 @@ export interface CheckConfig {
   caseSensitive?: boolean;
   stripAccents?: boolean;
   greekLetters?: boolean;
+  removeArticles?: boolean;
   allowOptionalAnswerParts?: boolean;
+  allowUnorderedAnswerParts?: boolean;
   alternativeAnswers?: {
     allow?: boolean;
     mode?: "onlySingleWord" | "both" | "onlySentence";
@@ -16,7 +18,9 @@ export const goodDefaults: Required<CheckConfig> = {
   caseSensitive: false,
   stripAccents: false,
   greekLetters: true,
+  removeArticles: false,
   allowOptionalAnswerParts: true,
+  allowUnorderedAnswerParts: true,
   alternativeAnswers: {
     allow: true,
     mode: "both",

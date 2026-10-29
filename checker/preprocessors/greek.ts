@@ -41,12 +41,12 @@ export class GreekPreprocessor implements Preprocessor<typeof greekSchema> {
   type = "preprocessor" as const;
   id = "greekLetters";
   name = {
-    EN: "Greek Letters to Latin",
-    NL: "Griekse letters naar normale letters",
+    EN: "Old Greek Letters to Latin",
+    NL: "Oude Griekse letters naar normale letters",
   };
   description = {
-    EN: "Converts Greek letters to Latin alphabet (e.g., λ -> l)",
-    NL: "Zet Griekse letters om naar het Latijnse alfabet (bijv. λ -> l)",
+    EN: "Converts old Greek letters to Latin alphabet (e.g., λ -> l)",
+    NL: "Zet oude Griekse letters om naar het Latijnse alfabet (bijv. λ -> l)",
   };
 
   schema = greekSchema;

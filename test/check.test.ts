@@ -100,6 +100,16 @@ describe("checkAnswer", () => {
     });
   });
 
+  describe("removeArticles option", () => {
+    it("ignores leading articles when removeArticles is true", () => {
+      expect(checkAnswer("de hond", "hond", { removeArticles: true })).toBe(true);
+      expect(checkAnswer("hond", "de hond", { removeArticles: true })).toBe(true);
+      expect(checkAnswer("de hond / de kat", "kat", { removeArticles: true })).toBe(true);
+      expect(checkAnswer("[de appel, het ei]", "ei appel", { removeArticles: true })).toBe(true);
+      expect(checkAnswer("le chien", "chien", { removeArticles: true })).toBe(true);
+    });
+  });
+
   describe("Combined options", () => {
     it("handles diacritics and alternatives combined", () => {
       const config: CheckConfig = {
@@ -114,6 +124,20 @@ describe("checkAnswer", () => {
       expect(checkAnswer("électricités / (le) café", "le cafe", config)).toBe(true);
       expect(checkAnswer("électricités / (le) café", "cafe", config)).toBe(true);
     });
+  });
+});
+describe("unorderedAnswerParts", () => {
+  it("unorderedAnswerParts", () => {
+    const config: CheckConfig = {
+      allowUnorderedAnswerParts: true,
+    };
+    expect(checkAnswer("[appel,peer]", "appel peer", config)).toBe(true);
+    expect(checkAnswer("[appel,(peer)]", "appel peer", config)).toBe(true);
+    expect(checkAnswer("[appel,(peer)]", "appel", config)).toBe(true);
+    expect(checkAnswer("[appel,(peer)]", "peer appel", config)).toBe(true);
+    expect(checkAnswer("[appel,peer]", "peer appel", config)).toBe(true);
+    expect(checkAnswer("[appel, peer]", "peer appel", config)).toBe(true);
+    expect(checkAnswer("[appel,peer]", "huis", config)).toBe(false);
   });
 });
 

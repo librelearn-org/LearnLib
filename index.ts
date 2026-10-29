@@ -20,6 +20,7 @@ import { VerySimpleGradeMaker, verySimpleGradeMaker, verySimple } from "./gradeM
 import { SimpleMethod, simpleMethod, simpleMethode } from "./methods/simple";
 import { FsrsMethod, fsrsMethod, fsrs, fsrsSchema } from "./methods/fsrs";
 import { OptionalAnswerPartsModule, optionalAnswerPartsModule, optionalAnswerPartsSchema } from "./checker/modules/optionalAnswerParts";
+import { UnorderedAnswerPartsModule, unorderedAnswerPartsModule, unorderedAnswerPartsSchema } from "./checker/modules/unorderedAnswerParts";
 import { AlternativeAnswersModule, alternativeAnswersModule, alternativeAnswersSchema } from "./checker/modules/alternativeAnswers";
 import { GreekPreprocessor, greekPreprocessor, greek } from "./checker/preprocessors/greek";
 import { upgradeTools } from "./upgradeTools";
@@ -332,10 +333,12 @@ export { FsrsMethod, fsrsMethod, FsrsMethod as fsrs, fsrsSchema } from "./method
 export { VerySimpleGradeMaker, verySimpleGradeMaker, VerySimpleGradeMaker as verySimple } from "./gradeMakers/verySimple";
 export { SimpleQueueUpdater, simpleQueueUpdater, SimpleQueueUpdater as simpleWachtrij } from "./queueUpdaters/simple";
 export { OptionalAnswerPartsModule, optionalAnswerPartsModule, optionalAnswerPartsSchema } from "./checker/modules/optionalAnswerParts";
+export { UnorderedAnswerPartsModule, unorderedAnswerPartsModule, unorderedAnswerPartsSchema } from "./checker/modules/unorderedAnswerParts";
 export { AlternativeAnswersModule, alternativeAnswersModule, alternativeAnswersSchema } from "./checker/modules/alternativeAnswers";
 export { CaseInsensitivePreprocessor, caseInsensitivePreprocessor, CaseSensitivePreprocessor, notCaseSensitive, caseSensitiveSchema } from "./checker/preprocessors/notCaseSensitive";
 export { StripAccentsPreprocessor, stripAccentsPreprocessor, stripAccentsSchema } from "./checker/preprocessors/stripAccents";
 export { GreekPreprocessor, greekPreprocessor, GreekPreprocessor as greek, greekSchema } from "./checker/preprocessors/greek";
+export { RemoveArticlesPreprocessor, removeArticlesPreprocessor, removeArticlesSchema, DEFAULT_ARTICLES } from "./checker/preprocessors/removeArticles";
 
 export { ModuleSystem, moduleSystem, globalModuleTracker, moduleTracker } from "./moduleSystem";
 export type { Module, LearnlibModule, GuiConfigSection } from "./moduleSystem";

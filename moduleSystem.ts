@@ -5,10 +5,12 @@ import { FsrsMethod } from "./methods/fsrs";
 import { VerySimpleGradeMaker } from "./gradeMakers/verySimple";
 import { SimpleQueueUpdater } from "./queueUpdaters/simple";
 import { OptionalAnswerPartsModule } from "./checker/modules/optionalAnswerParts";
+import { UnorderedAnswerPartsModule } from "./checker/modules/unorderedAnswerParts";
 import { AlternativeAnswersModule } from "./checker/modules/alternativeAnswers";
 import { CaseInsensitivePreprocessor } from "./checker/preprocessors/notCaseSensitive";
 import { StripAccentsPreprocessor } from "./checker/preprocessors/stripAccents";
 import { GreekPreprocessor } from "./checker/preprocessors/greek";
+import { RemoveArticlesPreprocessor } from "./checker/preprocessors/removeArticles";
 import { deepMerge } from "./configSystem";
 
 export type Module = LearningMethod | QueueUpdater | GradeMaker | CheckModule | Preprocessor;
@@ -44,10 +46,12 @@ export class ModuleSystem {
       new VerySimpleGradeMaker(),
       new SimpleQueueUpdater(),
       new OptionalAnswerPartsModule(),
+      new UnorderedAnswerPartsModule(),
       new AlternativeAnswersModule(),
       new CaseInsensitivePreprocessor(),
       new StripAccentsPreprocessor(),
-      new GreekPreprocessor()
+      new GreekPreprocessor(),
+      new RemoveArticlesPreprocessor()
     );
     return this;
   }
