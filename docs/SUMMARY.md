@@ -5,6 +5,7 @@
 ## Getting Started
 
 * [Installation & Quickstart](getting-started/installation.md)
+* [Using the Learnlib Class](getting-started/using-learnlib.md)
 * [Core Concepts](getting-started/core-concepts.md)
 
 ## Built-in Modules

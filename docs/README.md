@@ -42,6 +42,12 @@ Looking for a real-world integration example? Check out **Librelearn** to see ho
       <td><a href="getting-started/installation.md">installation</a></td>
     </tr>
     <tr>
+      <td><i class="fa-play"></i></td>
+      <td><strong>Using the Learnlib Class</strong></td>
+      <td>Initialize sessions, override grades, persist state to localStorage, and bind to React or Svelte.</td>
+      <td><a href="getting-started/using-learnlib.md">using-learnlib</a></td>
+    </tr>
+    <tr>
       <td><i class="fa-cubes"></i></td>
       <td><strong>Core Concepts</strong></td>
       <td>Understand how cards, learning methods, graders, queue updaters, and answer checkers fit together.</td>
