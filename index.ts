@@ -26,6 +26,7 @@ import { GreekPreprocessor, greekPreprocessor, greek } from "./checker/preproces
 import { upgradeTools } from "./upgradeTools";
 import { globalModuleTracker, moduleTracker, ModuleSystem, moduleSystem, Module, LearnlibModule, GuiConfigSection } from "./moduleSystem";
 import { extractDefaults, deepMerge, ModuleSchema, InferConfig, SchemaField } from "./configSystem";
+import { version } from "punycode";
 
 export class Learnlib {
   public method: LearningMethod;
@@ -261,8 +262,26 @@ export class Learnlib {
     return this;
   }
 
+  public markIntroduced() {
+    if (!this.current) {
+      console.warn("No current question");
+      return;
+    }
+    if (this.current.phase == Phase.NotIntroduced) {
+      this.current.phase = Phase.Learning;
+      // TODO verplaats de ding met een paar
+      this.notify();
+    } else {
+      console.warn("This card is already introduced");
+    }
+  }
+
   public answer(uAnswer: string, gradeOverwrite?: Grade, checkConfigOverride?: CheckConfig) {
     if (!this.current) {
+      return;
+    }
+    if (this.current.phase == Phase.NotIntroduced) {
+      console.warn("You can't answer a not yet introduced question.");
       return;
     }
     const endTime = new Date();
@@ -273,6 +292,11 @@ export class Learnlib {
     );
 
     const grade = gradeOverwrite ?? this.grader.grade(isCorrect, this.cStart, endTime);
+    if (grade == Grade.Incorrect) {
+      this.current.phase = Phase.Learning;
+    } else {
+      this.current.phase = Phase.Review;
+    }
     const snapshot: CardSnapshot = {
       date: endTime,
       cardId: this.current.id,
@@ -297,6 +321,21 @@ export class Learnlib {
 
   public antwoord(uAnswer: string, gradeOverwrite?: Grade, checkConfigOverride?: CheckConfig) {
     this.answer(uAnswer, gradeOverwrite, checkConfigOverride);
+  }
+
+  public previewTime() {
+    if (this.current == null) { console.warn("No session"); return; }
+    if (this.method.capabilities.type == 'session') {
+      console.warn("This is not a session that supports long term learning. So there is nothing to schedule");
+      return;
+    }
+    let returnTimes: { grade: Grade, nextReview: Date }[] = [];
+    const now = new Date()
+    this.method.capabilities.supportedGrades.forEach((g) => {
+      let review = this.method.reviewCard(this.current!, g, now)
+      returnTimes.push({ grade: g, nextReview: review.nextReview })
+    })
+    return returnTimes;
   }
 }
 

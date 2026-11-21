@@ -19,7 +19,8 @@
     "bun-test": "bun test",
     "build": "bun build ./index.ts --outdir ./dist --format esm --target node --sourcemap=inline && tsc -p tsconfig.types.json",
     "build:web-perf": "bun build ./web-perf/benchmarks.ts --outfile ./web-perf/bundle.js --target browser --format iife",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "typecheck": "tsc"
   },
   "keywords": [],
   "author": "",

@@ -11,6 +11,7 @@ export enum Grade {
 export enum Phase {
   Learning = 0,
   Review = 1,
+  NotIntroduced = 2,
 }
 
 export type multiLangString = {
@@ -56,8 +57,13 @@ export interface BaseModule<TSchema extends ModuleSchema = any> {
 
 export interface LearningMethod<TSchema extends ModuleSchema = any> extends BaseModule<TSchema> {
   type?: "method";
+  capabilities: {
+    type: "spaced" | "session", // is deze methode gemaakt voor een enkele sessie of lange termijn
+    // als type `spaced` zijn dingen als het klaar bericht ipv `Je bent klaar met leren` `Je bent voor vandaag klaar met leren`
+    showNextLearnDate: boolean,
+    supportedGrades: Grade[],
+  }; 
   reviewCard(card: CardState, grade: Grade, now?: Date, state?: LearnlibState): CardState;
-  filterQueueItem(item: CardState): boolean;
 }
 
 export interface QueueUpdater<TSchema extends ModuleSchema = any> extends BaseModule<TSchema> {

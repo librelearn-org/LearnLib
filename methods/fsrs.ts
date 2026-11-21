@@ -103,12 +103,13 @@ export class FsrsMethod implements LearningMethod<typeof fsrsSchema> {
     NL: "FSRS-algoritme voor geoptimaliseerd langetermijngeheugen",
   };
 
+  capabilities = {
+    type: "spaced" as const,
+    showNextLearnDate: true,
+    supportedGrades: [Grade.Easy, Grade.Good, Grade.Hard, Grade.Incorrect]
+  };
   schema = fsrsSchema;
   config = extractDefaults(fsrsSchema);
-
-  filterQueueItem(item: CardState): boolean {
-    return true;
-  }
 
   reviewCard(card: CardState, g: Grade, now: Date = new Date()): CardState {
     const targetR = this.config.targetRecall ?? 0.9;
@@ -135,9 +136,14 @@ export class FsrsMethod implements LearningMethod<typeof fsrsSchema> {
       nextD = calculateDifficulty(previousD, g);
     }
 
-    const interval = Math.max(Math.round(calculateNextReview(targetR, nextS)), 1.0);
-    const nextDate = new Date(now.getTime() + interval * 24 * 60 * 60 * 1000);
-
+    let nextDate: Date;
+    if (g === Grade.Incorrect) {
+      const stepMin = 10;
+      nextDate = new Date(now.getTime() + stepMin * 60 * 1000);
+    } else {
+      const interval = Math.max(Math.round(calculateNextReview(targetR, nextS)), 1.0);
+      nextDate = new Date(now.getTime() + interval * 24 * 60 * 60 * 1000);
+    }
     return {
       ...card,
       lastReviewed: now,

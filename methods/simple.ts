@@ -11,6 +11,11 @@ export class SimpleMethod implements LearningMethod {
     EN: "Simple flashcard learning with standard repetition",
     NL: "Eenvoudig leren met standaard herhaling",
   };
+  capabilities = {
+    type: "session" as const,
+    showNextLearnDate: false,
+    supportedGrades: [Grade.Good, Grade.Incorrect]
+  };
 
   reviewCard(card: CardState, grade: Grade, now: Date = new Date()): CardState {
     const metadata = { ...(card.metadata ?? {}) };
@@ -22,19 +27,12 @@ export class SimpleMethod implements LearningMethod {
         metadata,
       };
     }
-    metadata["learned"] = true;
-    metadata["geleerd"] = true;
     return {
       ...card,
       lastReviewed: now,
       nextReview: now,
       metadata,
     };
-  }
-
-  filterQueueItem(item: CardState): boolean {
-    const metadata = item?.metadata ?? {};
-    return Boolean(metadata["learned"] || metadata["geleerd"]);
   }
 }
 

@@ -40,6 +40,8 @@ export class OptionalAnswerPartsModule implements CheckModule<typeof optionalAns
         if (isAllowed === false) {
             return false;
         }
+        // a (b/c)
+
 
         // Fast path: Only run if both parentheses exist in the answer string
         if (answer.indexOf("(") === -1 || answer.indexOf(")") === -1) {
