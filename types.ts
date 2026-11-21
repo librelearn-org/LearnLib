@@ -69,6 +69,7 @@ export interface LearningMethod<TSchema extends ModuleSchema = any> extends Base
 export interface QueueUpdater<TSchema extends ModuleSchema = any> extends BaseModule<TSchema> {
   type?: "queueUpdater";
   updateQueue(state: LearnlibState, card: CardState, grade: Grade): LearnlibState;
+  introductionQueueMutator?(state: LearnlibState, card: CardState): LearnlibState;
 }
 
 export interface GradeMaker<TSchema extends ModuleSchema = any> extends BaseModule<TSchema> {

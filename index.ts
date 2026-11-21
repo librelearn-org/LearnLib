@@ -26,7 +26,6 @@ import { GreekPreprocessor, greekPreprocessor, greek } from "./checker/preproces
 import { upgradeTools } from "./upgradeTools";
 import { globalModuleTracker, moduleTracker, ModuleSystem, moduleSystem, Module, LearnlibModule, GuiConfigSection } from "./moduleSystem";
 import { extractDefaults, deepMerge, ModuleSchema, InferConfig, SchemaField } from "./configSystem";
-import { version } from "punycode";
 
 export class Learnlib {
   public method: LearningMethod;
@@ -269,7 +268,17 @@ export class Learnlib {
     }
     if (this.current.phase == Phase.NotIntroduced) {
       this.current.phase = Phase.Learning;
-      // TODO verplaats de ding met een paar
+      this.cards = this.cards.map((k) => (k.id === this.current?.id ? this.current! : k));
+      this.updateSnapshot();
+      let newState = undefined;
+      if (this.queueUpdater.introductionQueueMutator) {
+        newState = this.queueUpdater.introductionQueueMutator({ ...this.cachedSnapshot }, this.current);
+      } else {
+        newState = this.queueUpdater.updateQueue({ ...this.cachedSnapshot }, this.current, Grade.Incorrect);
+      }
+      this.queue = newState.queue;
+      this.current = this.queue[0] ?? null;
+      this.cStart = new Date();
       this.notify();
     } else {
       console.warn("This card is already introduced");
@@ -329,10 +338,14 @@ export class Learnlib {
       console.warn("This is not a session that supports long term learning. So there is nothing to schedule");
       return;
     }
+    if (!this.method.capabilities.showNextLearnDate){
+      console.warn("This method does not support previewTime.")
+      return;
+    }
     let returnTimes: { grade: Grade, nextReview: Date }[] = [];
     const now = new Date()
     this.method.capabilities.supportedGrades.forEach((g) => {
-      let review = this.method.reviewCard(this.current!, g, now)
+      let review = this.method.reviewCard({ ...this.current!, metadata: { ...(this.current!.metadata ?? {}) } }, g, now);
       returnTimes.push({ grade: g, nextReview: review.nextReview })
     })
     return returnTimes;
