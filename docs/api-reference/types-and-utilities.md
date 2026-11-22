@@ -30,8 +30,13 @@ Indicates the learning stage of a card:
 export enum Phase {
   Learning = 0,
   Review = 1,
+  NotIntroduced = 2,
 }
 ```
+
+- `Phase.Learning` (`0`): Card is currently being learned or relearned after an incorrect answer.
+- `Phase.Review` (`1`): Card has been answered correctly and is in review.
+- `Phase.NotIntroduced` (`2`): Card has not been introduced to the learner yet; call `session.markIntroduced()` before answering it.
 
 ---
 
@@ -85,7 +90,9 @@ export interface LearnlibState {
 
 ## `upgradeTools`
 
-`upgradeTools` normalizes partial or legacy (Dutch-named) card objects into valid `CardState` instances with initialized `Date` fields and `history` arrays:
+`upgradeTools` provides helpers for normalizing partial or legacy (Dutch-named) card objects into valid `CardState` instances and for scheduling word introductions across a study plan.
+
+### Card Normalization
 
 ```typescript
 import { upgradeTools } from "@siemsiem/learnlib";
@@ -99,6 +106,35 @@ const card = upgradeTools.upgradeCard({
 
 - `upgradeTools.upgradeCard(card)` — normalizes a partial or legacy card object into a full `CardState`.
 - `upgradeTools.upgradeList(card)` — alias for `upgradeCard(card)`.
+
+### Introduction Planning
+
+Schedule a deck of cards to be gradually introduced over time. Both helpers return a new `CardState[]` array with every card's `phase` set to `Phase.NotIntroduced` and `nextReview` set to its scheduled introduction date:
+
+```typescript
+import { upgradeTools } from "@siemsiem/learnlib";
+
+// Spread cards evenly over a 14-day study window with a 3-day cooldown before the deadline
+const plannedByDeadline = upgradeTools.scheduleIntroductions(cards, {
+  days: 14,
+  cooldown: 3,
+  startDate: new Date(), // optional, defaults to now
+});
+
+// Or introduce a fixed number of new cards per day
+const plannedByRate = upgradeTools.scheduleIntroductionsSimple(cards, {
+  countPerDay: 10,
+  startDate: new Date(), // optional, defaults to now
+});
+```
+
+- `upgradeTools.scheduleIntroductions(cards, options)` — spreads `cards` across `Math.max(1, Math.ceil(options.days - options.cooldown))` learning days (at least 1 card per day) and delegates to `scheduleIntroductionsSimple()`.
+  - `options.days` (`number`): Total number of days available before the target date/exam.
+  - `options.cooldown` (`number`): Number of review-only days at the end with no new introductions.
+  - `options.startDate` (`Date`, optional): Start date for scheduling (defaults to `new Date()`).
+- `upgradeTools.scheduleIntroductionsSimple(cards, options)` — marks all cards as `Phase.NotIntroduced` and schedules `countPerDay` cards per day starting from `startDate` (defaults to `new Date()`).
+  - `options.countPerDay` (`number`): Number of cards to introduce per day.
+  - `options.startDate` (`Date`, optional): Start date for scheduling (defaults to `new Date()`).
 
 <details>
 <summary>Dutch Backwards-Compatibility Exports</summary>

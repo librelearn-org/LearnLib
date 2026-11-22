@@ -24,8 +24,8 @@ flowchart LR
 1. **Preprocessors** normalize both the expected answer and user input (e.g., lowercasing, stripping accents, converting Greek characters, or removing leading articles).
 2. **Checker Modules** expand syntax rules in the expected answer — such as optional parts `(like this)`, unordered lists `[a, b, c]`, and `/` alternatives — to determine whether the user's answer is correct.
 3. **GradeMaker** converts the boolean correctness result and response time (`start` to `endTime`) into a `Grade` (`Incorrect`, `Hard`, `Good`, or `Easy`), unless a manual `gradeOverwrite` was provided.
-4. **LearningMethod** updates the card's scheduling fields (`lastReviewed`, `nextReview`, and `metadata` such as stability/difficulty or `learned`).
-5. **QueueUpdater** produces the next queue state (for example, removing mastered cards or reinserting failed cards at a random position) and notifies all subscribers.
+4. **LearningMethod** updates the card's scheduling fields (`lastReviewed`, `nextReview`, and `metadata` such as stability/difficulty) and declares its `capabilities` (session vs. spaced, supported grades, and whether next review dates can be previewed).
+5. **QueueUpdater** produces the next queue state (for example, removing mastered cards, reinserting failed cards at a random position, or moving newly introduced cards via `introductionQueueMutator`) and notifies all subscribers.
 
 ## The Five Module Types
 
@@ -48,7 +48,7 @@ interface CardState {
   id: string;
   question: string;
   answer: string;
-  phase: Phase;               // Phase.Learning (0) | Phase.Review (1)
+  phase: Phase;               // Phase.Learning (0) | Phase.Review (1) | Phase.NotIntroduced (2)
   methodId: string;           // ID of the active LearningMethod (e.g., "simple" or "fsrs")
   lastReviewed: Date;
   nextReview: Date;

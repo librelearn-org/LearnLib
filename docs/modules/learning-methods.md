@@ -5,21 +5,41 @@ icon: brain
 
 # Learning Methods
 
-Learning methods (`type: "method"`) determine how a card's `lastReviewed`, `nextReview`, and `metadata` are updated after each answer.
+Learning methods (`type: "method"`) determine how a card's `lastReviewed`, `nextReview`, and `metadata` are updated after each answer, and declare their `capabilities` so UIs can adapt automatically.
 
 {% columns %}
 {% column %}
 ### Simple (`"simple"`)
 
-Marks a card as learned (`metadata.learned = true`) as soon as it is graded `Hard`, `Good`, or `Easy`. Ideal for single-session cramming and quick vocabulary drills.
+Single-session flashcard learning supporting `Good` and `Incorrect` grades. Ideal for single-session cramming and quick vocabulary drills.
 {% endcolumn %}
 
 {% column %}
 ### FSRS (`"fsrs"`)
 
-Implements the **Free Spaced Repetition Scheduler**, modeling memory stability ($S$), difficulty ($D$), and retrievability ($R$) to schedule optimal multi-day review intervals.
+Implements the **Free Spaced Repetition Scheduler**, modeling memory stability ($S$), difficulty ($D$), and retrievability ($R$) to schedule optimal multi-day review intervals across all four grades.
 {% endcolumn %}
 {% endcolumns %}
+
+---
+
+## Method Capabilities
+
+Every `LearningMethod` exposes a `capabilities` object describing how it behaves and which UI features it supports:
+
+```typescript
+capabilities: {
+  type: "spaced" | "session";
+  showNextLearnDate: boolean;
+  supportedGrades: Grade[];
+}
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `type` | `"spaced" \| "session"` | `"session"` for single-session cramming, or `"spaced"` for long-term spaced repetition (e.g., showing *"Done for today"* instead of *"Session complete"*). |
+| `showNextLearnDate` | `boolean` | Whether `session.previewTime()` can preview upcoming review dates for each supported grade. |
+| `supportedGrades` | `Grade[]` | The `Grade` values supported by this method. Custom grading UIs should only display buttons for grades listed here. |
 
 ---
 
@@ -27,9 +47,16 @@ Implements the **Free Spaced Repetition Scheduler**, modeling memory stability (
 
 `SimpleMethod` is the default learning method in `Learnlib`.
 
-- On `Grade.Incorrect`: keeps the card unlearned and sets `lastReviewed` and `nextReview` to `now`.
-- On `Grade.Hard`, `Grade.Good`, or `Grade.Easy`: sets `metadata.learned = true` (and `metadata.geleerd = true` for Dutch backwards compatibility).
-- `filterQueueItem(item)` returns `true` once `metadata.learned` is truthy.
+### Capabilities
+
+- **`type`:** `"session"`
+- **`showNextLearnDate`:** `false`
+- **`supportedGrades`:** `[Grade.Good, Grade.Incorrect]`
+
+### Behavior
+
+- Updates `lastReviewed` and `nextReview` to `now` on every review.
+- `Learnlib.answer()` automatically sets `card.phase` to `Phase.Learning` on `Grade.Incorrect` and `Phase.Review` on any passing grade.
 
 ```typescript
 import { Learnlib, SimpleMethod } from "@siemsiem/learnlib";
@@ -45,6 +72,18 @@ const session = new Learnlib({
 ## `FsrsMethod` (`id: "fsrs"`)
 
 `FsrsMethod` schedules long-term reviews using the 19-weight FSRS v4/v5 equations.
+
+### Capabilities
+
+- **`type`:** `"spaced"`
+- **`showNextLearnDate`:** `true`
+- **`supportedGrades`:** `[Grade.Easy, Grade.Good, Grade.Hard, Grade.Incorrect]`
+
+### Scheduling Behavior
+
+- On `Grade.Incorrect`: schedules a short **10-minute** relearning step (`nextReview = now + 10 minutes`).
+- On `Grade.Hard`, `Grade.Good`, or `Grade.Easy`: calculates the next review interval in days (minimum 1 day) from updated stability ($S$) and `targetRecall`.
+- Supports `session.previewTime()` to preview the next review `Date` for every supported grade before the user submits.
 
 ### Configuration Schema (`fsrsSchema`)
 

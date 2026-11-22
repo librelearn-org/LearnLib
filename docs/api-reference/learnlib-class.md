@@ -81,7 +81,7 @@ new Learnlib(
 
 ### `answer(uAnswer, gradeOverwrite?, checkConfigOverride?)`
 
-Processes a user's answer for `this.current`. If `this.current` is `null` (the queue is already empty), `answer()` returns immediately as a no-op.
+Processes a user's answer for `this.current`. If `this.current` is `null` (the queue is already empty) or `this.current.phase === Phase.NotIntroduced` (logs a warning), `answer()` returns immediately as a no-op.
 
 ```typescript
 public answer(
@@ -99,11 +99,43 @@ public answer(
   1. Captures `endTime = new Date()`.
   2. Calls `checkAnswer(this.current.answer, uAnswer, checkConfigOverride ?? this.checkConfig)`.
   3. Computes `grade = gradeOverwrite ?? this.grader.grade(isCorrect, this.cStart, endTime)`.
-  4. Appends a `{ date: endTime, cardId, answer: uAnswer, grade }` snapshot to both `this.history` and `this.current.history`.
-  5. Calls `this.method.reviewCard(this.current, grade, endTime, snapshot)` and updates the card in `this.queue[0]` and `this.cards`.
-  6. Calls `this.queueUpdater.updateQueue(snapshot, this.current, grade)` and sets `this.queue = newState.queue` and `this.current = this.queue[0] ?? null`.
-  7. Resets the internal response timer (`this.cStart = new Date()`) for the next card and notifies all subscribed listeners.
+  4. Updates `this.current.phase` to `Phase.Learning` if `grade === Grade.Incorrect`, or `Phase.Review` otherwise.
+  5. Appends a `{ date: endTime, cardId, answer: uAnswer, grade }` snapshot to both `this.history` and `this.current.history`.
+  6. Calls `this.method.reviewCard(this.current, grade, endTime, snapshot)` and updates the card in `this.queue[0]` and `this.cards`.
+  7. Calls `this.queueUpdater.updateQueue(snapshot, this.current, grade)` and sets `this.queue = newState.queue` and `this.current = this.queue[0] ?? null`.
+  8. Resets the internal response timer (`this.cStart = new Date()`) for the next card and notifies all subscribed listeners.
 - **Dutch alias:** `antwoord(uAnswer, gradeOverwrite?, checkConfigOverride?)`
+
+---
+
+### `markIntroduced()`
+
+Marks `this.current` as introduced when its `phase` is `Phase.NotIntroduced`, transitioning it to `Phase.Learning` and moving it in the queue so it will be tested shortly.
+
+```typescript
+public markIntroduced(): void
+```
+
+- **Behavior:**
+  1. If `this.current` is `null` or its `phase` is not `Phase.NotIntroduced`, logs a warning and returns without mutating state.
+  2. Sets `this.current.phase = Phase.Learning` and updates the card in `this.cards`.
+  3. Moves the card in the queue using `this.queueUpdater.introductionQueueMutator(snapshot, this.current)` if implemented, or falls back to `this.queueUpdater.updateQueue(snapshot, this.current, Grade.Incorrect)`.
+  4. Sets `this.current = this.queue[0] ?? null`, resets `this.cStart = new Date()`, and notifies all subscribers.
+
+---
+
+### `previewTime()`
+
+Simulates `this.method.reviewCard()` for each grade in `this.method.capabilities.supportedGrades` without mutating `this.current`, returning the projected `nextReview` date for every supported grade.
+
+```typescript
+public previewTime(): { grade: Grade; nextReview: Date }[] | undefined
+```
+
+- **Returns:** An array of `{ grade: Grade, nextReview: Date }` objects, or `undefined` (with a console warning) if:
+  - `this.current` is `null`
+  - `this.method.capabilities.type === "session"`
+  - `this.method.capabilities.showNextLearnDate` is `false`
 
 ---
 
@@ -131,7 +163,7 @@ public reset(): void
 
 ### `subscribe(listener)`
 
-Registers a callback that fires whenever the session state changes (`answer()`, `reshuffle()`, or `reset()`). Returns an `unsubscribe` function.
+Registers a callback that fires whenever the session state changes (`answer()`, `markIntroduced()`, `reshuffle()`, or `reset()`). Returns an `unsubscribe` function.
 
 ```typescript
 public subscribe: (listener: (state: LearnlibState) => void) => () => void

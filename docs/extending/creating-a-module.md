@@ -98,7 +98,7 @@ globalModuleTracker.register(new StripPunctuationPreprocessor());
 {% endtab %}
 
 {% tab title="Learning Method" %}
-A `LearningMethod` updates `lastReviewed`, `nextReview`, and `metadata` on a `CardState` when `reviewCard` is called.
+A `LearningMethod` declares its `capabilities` (whether it is `"spaced"` or `"session"`, whether next review dates can be previewed, and which `Grade` values it supports) and updates `lastReviewed`, `nextReview`, and `metadata` on a `CardState` when `reviewCard` is called.
 
 ```typescript
 import {
@@ -116,6 +116,11 @@ export class LeitnerMethod implements LearningMethod {
     EN: "Doubles the review interval for each box promotion",
     NL: "Verdubbelt het herhalingsinterval bij elke promotie",
   };
+  capabilities = {
+    type: "spaced" as const,
+    showNextLearnDate: true,
+    supportedGrades: [Grade.Good, Grade.Incorrect],
+  };
 
   reviewCard(card: CardState, grade: Grade, now: Date = new Date()): CardState {
     const prevBox = Number(card.metadata?.box ?? 1);
@@ -128,10 +133,6 @@ export class LeitnerMethod implements LearningMethod {
       nextReview: new Date(now.getTime() + intervalDays * 86_400_000),
       metadata: { ...card.metadata, box: nextBox },
     };
-  }
-
-  filterQueueItem(item: CardState): boolean {
-    return (item.metadata?.box ?? 1) >= 5;
   }
 }
 
@@ -170,7 +171,7 @@ globalModuleTracker.register(new SpeedGradeMaker());
 {% endtab %}
 
 {% tab title="QueueUpdater" %}
-A `QueueUpdater` returns an updated `LearnlibState` with the modified `queue` array after each review.
+A `QueueUpdater` returns an updated `LearnlibState` with the modified `queue` array after each review. You can also implement the optional `introductionQueueMutator(state, card)` method to customize where a card is placed after `session.markIntroduced()` (otherwise `Learnlib` falls back to `updateQueue(state, card, Grade.Incorrect)`).
 
 ```typescript
 import {
@@ -195,6 +196,12 @@ export class MoveFailedToEndQueueUpdater implements QueueUpdater {
     if (grade === Grade.Incorrect) {
       remaining.push(card);
     }
+    return { ...state, queue: remaining };
+  }
+
+  introductionQueueMutator(state: LearnlibState, card: CardState): LearnlibState {
+    const remaining = state.queue.filter((c) => c.id !== card.id);
+    remaining.splice(3, 0, card);
     return { ...state, queue: remaining };
   }
 }

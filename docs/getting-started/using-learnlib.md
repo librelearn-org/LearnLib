@@ -91,22 +91,58 @@ During a study session, read `session.current` (or `session.getSnapshot().queueS
 session.answer(userInput);
 ```
 
-### Manual Grade Overwrite (`gradeOverwrite`)
+### Manual Grade Overwrite (`gradeOverwrite`) & Previewing Next Review Times
 
 Sometimes you want to bypass or override the automatic grader — for example:
 - Implementing an **"I was right / Override typo"** button after a failed check.
-- Building **self-graded flashcards** (flip card -> click *Again*, *Hard*, *Good*, or *Easy*).
+- Building **self-graded flashcards** (flip card -> pick a grade).
 - Providing `Grade.Hard` or `Grade.Easy` ratings to `FsrsMethod` when using `VerySimpleGradeMaker`.
+
+When building a custom grading UI, read `session.method.capabilities.supportedGrades` so you only render the grades supported by the active learning method (`SimpleMethod` supports `[Grade.Good, Grade.Incorrect]`, while `FsrsMethod` supports all four grades). If `session.method.capabilities.showNextLearnDate` is `true`, you can also call `session.previewTime()` to display the next scheduled review date for each grade:
 
 ```typescript
 import { Grade } from "@siemsiem/learnlib";
 
-// Force Grade.Easy regardless of whether the typed string matched
-session.answer(userInput, Grade.Easy);
+// Only render buttons for grades supported by the active learning method
+const supportedGrades = session.method.capabilities.supportedGrades;
 
-// Force Grade.Incorrect even if the answer text matched
-session.answer(userInput, Grade.Incorrect);
+// Optional: preview next review dates when supported (e.g., FsrsMethod)
+const previews = session.method.capabilities.showNextLearnDate
+  ? session.previewTime()
+  : undefined;
+
+// Submit a manual grade
+session.answer(userInput, Grade.Easy);
 ```
+
+### Introducing New Words (`Phase.NotIntroduced` & `markIntroduced()`)
+
+LearnLib has built-in support for introducing new cards before testing them — no custom card `metadata` required.
+
+1. Mark cards as `Phase.NotIntroduced` (either manually or using [`upgradeTools.scheduleIntroductions()`](../api-reference/types-and-utilities.md#introduction-planning) / `upgradeTools.scheduleIntroductionsSimple()`).
+2. In your UI, check `current.phase === Phase.NotIntroduced` to show an introduction screen (displaying both `current.question` and `current.answer`).
+3. When the learner clicks **Continue**, call `session.markIntroduced()`. This changes the card's `phase` to `Phase.Learning`, moves it further back in the queue (via `queueUpdater.introductionQueueMutator`), and advances to the next card.
+
+```typescript
+import { Learnlib, Phase, upgradeTools } from "@siemsiem/learnlib";
+
+// Schedule cards for introduction (5 per day)
+const plannedCards = upgradeTools.scheduleIntroductionsSimple(rawCards, {
+  countPerDay: 5,
+});
+
+// Filter to cards due today and start a session
+const session = new Learnlib({ cards: plannedCards, method: "fsrs" });
+
+if (session.current?.phase === Phase.NotIntroduced) {
+  // Show question + answer to the user, then mark as introduced:
+  session.markIntroduced();
+}
+```
+
+{% hint style="warning" %}
+Calling `session.answer()` on a card whose `phase` is `Phase.NotIntroduced` logs a warning and returns without modifying state. Always call `session.markIntroduced()` first.
+{% endhint %}
 
 ### Per-Question Checker Override (`checkConfigOverride`)
 
@@ -166,25 +202,36 @@ console.log(restoredSession.getSnapshot().queueState.progress);
 
 ## 4. UI Framework Integration
 
-`session.subscribe` and `session.getSnapshot` are arrow-function properties bound to the `Learnlib` instance. `getSnapshot()` returns a cached `LearnlibState` reference that only changes when state mutates (`answer()`, `reshuffle()`, or `reset()`), making it directly compatible with React's `useSyncExternalStore`.
+`session.subscribe` and `session.getSnapshot` are arrow-function properties bound to the `Learnlib` instance. `getSnapshot()` returns a cached `LearnlibState` reference that only changes when state mutates (`answer()`, `markIntroduced()`, `reshuffle()`, or `reset()`), making it directly compatible with React's `useSyncExternalStore`.
 
 {% tabs %}
 {% tab title="React" %}
 ```tsx
 import { useSyncExternalStore, useState } from "react";
-import { Learnlib, Grade } from "@siemsiem/learnlib";
+import { Learnlib, Grade, Phase } from "@siemsiem/learnlib";
 
 export function FlashcardTrainer({ session }: { session: Learnlib }) {
   const state = useSyncExternalStore(session.subscribe, session.getSnapshot);
   const [input, setInput] = useState("");
 
   const { current, isDone, progress } = state.queueState;
+  const { capabilities } = session.method;
 
   if (isDone || !current) {
     return (
       <div>
-        <h2>Session Complete!</h2>
+        <h2>{capabilities.type === "spaced" ? "Done for today!" : "Session Complete!"}</h2>
         <button onClick={() => session.reset()}>Study Again</button>
+      </div>
+    );
+  }
+
+  if (current.phase === Phase.NotIntroduced) {
+    return (
+      <div>
+        <h3>{current.question}</h3>
+        <p>{current.answer}</p>
+        <button onClick={() => session.markIntroduced()}>Got it</button>
       </div>
     );
   }
@@ -207,9 +254,11 @@ export function FlashcardTrainer({ session }: { session: Learnlib }) {
         />
         <button type="submit">Check</button>
       </form>
-      <button onClick={() => session.answer(current.answer, Grade.Easy)}>
-        Mark as Easy
-      </button>
+      {capabilities.supportedGrades.includes(Grade.Easy) && (
+        <button onClick={() => session.answer(current.answer, Grade.Easy)}>
+          Mark as Easy
+        </button>
+      )}
     </div>
   );
 }
@@ -275,7 +324,7 @@ Shuffles only the cards **currently remaining** in `session.queue`, updates `ses
 {% column %}
 ### `session.reset()`
 
-Copies all cards from `session.cards` back into `session.queue` and calls `reshuffle()`. Note that card `metadata` (such as FSRS stability or `learned: true`) and `history` remain on the cards unless you clear them explicitly.
+Copies all cards from `session.cards` back into `session.queue` and calls `reshuffle()`. Note that card `metadata` (such as FSRS stability) and `history` remain on the cards unless you clear them explicitly.
 {% endcolumn %}
 {% endcolumns %}
 
