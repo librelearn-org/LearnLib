@@ -1,5 +1,7 @@
 import { CardState, Phase } from "./types";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export const upgradeTools = {
   upgradeCard(card: Partial<CardState> | Record<string, any>): CardState {
     const raw = card as any;
@@ -25,4 +27,28 @@ export const upgradeTools = {
   upgradeList(card: Partial<CardState> | Record<string, any>): CardState {
     return this.upgradeCard(card);
   },
+  scheduleIntroductions(cards: CardState[], options: {
+    days: number,
+    cooldown: number,
+    startDate?: Date
+  }) {
+    const learningDays = Math.max(1, Math.ceil(options.days - options.cooldown));
+    const toIntroduce = cards.length
+    const cardsPerDay = Math.max(1, toIntroduce / learningDays)
+    return upgradeTools.scheduleIntroductionsSimple(cards, {
+      countPerDay: cardsPerDay,
+      startDate: options.startDate
+    })
+  },
+  scheduleIntroductionsSimple(cards: CardState[], options: {
+    countPerDay: number,
+    startDate?: Date
+  }) {
+    const startDate = options.startDate ?? new Date();
+    return cards.map((card, i) => ({
+      ...card,
+      phase: Phase.NotIntroduced,
+      nextReview: new Date(startDate.getTime() + Math.floor(i / options.countPerDay) * DAY_MS)
+    }))
+  }
 };
