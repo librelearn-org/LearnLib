@@ -27,6 +27,15 @@ export class SimpleQueueUpdater implements QueueUpdater {
       queue,
     };
   }
+  introductionQueueMutator(state: LearnlibState, card: CardState): LearnlibState {
+    let queue = [...state.queue];
+    queue = queue.filter((k) => k.id !== card.id);
+    queue.splice(4, 0, card)
+    return {
+      ...state,
+      queue
+    }
+  }
 }
 
 export { SimpleQueueUpdater as simpleQueueUpdater, SimpleQueueUpdater as simpleWachtrij };
